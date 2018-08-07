@@ -50,3 +50,14 @@ tags: Spring
 ##ApplicationContext容器设计原理
 - refresh()
 - 怎样从文件系统中加载XML的bean定义资源
+##IoC容器的初始化过程
+- 主要线索：
+	- Resource定位:统一的Resource接口来完成，对各种形式的BeanDefinition提供了统一接口。如FileSystemResource,ClassPathResource.
+	- 载入:Bean表示为IoC容器内部数据结构->BeanDefinition.
+	- 注册:向IoC容器BeanFactory注册BeanDefinition，调用BeanDefinitionRegistry接口实现。内部为将BeanDefinition注入到HashMap中，通过HashMap来持有这些BeanDefinition.
+- Resource定位
+	- 由refresh()来触发，在FileSystemBeanFactory的构造函数中启动的->createBeanFactory()创建了IoC容器来供ApplicationContext使用；
+	- refreshBeanFactory()->getResourceByPath(String path);
+	- ClassPathResource resource = new ClassPathResource("bean.xml");
+- BeanDefinition的载入和解析
+	- 初始化入口
