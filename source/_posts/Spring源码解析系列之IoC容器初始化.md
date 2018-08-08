@@ -60,4 +60,16 @@ tags: Spring
 	- refreshBeanFactory()->getResourceByPath(String path);
 	- ClassPathResource resource = new ClassPathResource("bean.xml");
 - BeanDefinition的载入和解析
-	- 初始化入口
+	- 初始化入口:refresh()->初始化BeanDefinition,提供Bean的生命周期管理
+	- refresh()->在子类中启动refreshBeanFactory,在此处创建BeanFactory,如果已经有容器存在,就需要把已有的容器销毁或关闭，保证refresh后创建的容器是新的。->prepareBeanFactory->postProcessBeanFactory(beanFactory)->invokeBeanFactoryProcessors(beanFactory)->registerBeanPostProcessors(beanFactory)->initMessageSource()->initApplicationEventMulticaster()->onRefresh()->registerListeners()->finishBeanFactoryInitialization(beanFactory)->finishRefresh();
+	- refreshBeanFactory->loadBeanDefinitions(beanFactory)
+	- loadBeanDefinitions(beanFactory)中初始化读取器XmlBeanDefinitionReader,并将其在IoC容器中设置好->loadBeanDefinitions(reader)载入过程委托给BeanDefinitionReader来完成->loadBeanDefinitions(Resource resource)在读取器中，得到代表XML文件的Resource,这个对象封装了Xml文件的I/O操作，读取器可以打开I/O流后得到XML的文件对象。通过这个文件对象就可以按照Spring的Bean定义规则来对这个Xml的文档树进行解析了，这个解析过程交个BeanDefinitionDelegate来完成。
+	- loadBeanDefinitions(Resource resource)->doLoadBeanDefinitions(inputSource,resource)->Document doc = this,documentLoader.loadocument()获取xml文件的Document对象，解析由documentLoader完成。
+	- Spring的Bean语义要求进行解析转化为BeanDefinition数据结构是在registerBeanDefinitions(doc,resource)中完成,具体过程由BeanDefinitionDocmentReader完成，并且对Bean的数量进行统计。
+	- BeanDefinition的载入分成两部分:
+		- **调用Xml解析器得到document对象**但是并没有按照spring规则进行解析；
+		- **按照spring规则进行解析是在documentReader中实现。完成BeanDefinition的处理，结果由BeanDefinitionHolder对象持有**
+		- **BeanDefinitionHolder对象除了持有BeanDefinition对象外,还持有其他与BeanDefinition的使用相关的信息，如Bean的名字，别名集合等。**
+		- 解析过程由BeanDefinitionParserDelegate来实现。
+	- BeanDefinitionParserDelegate完成BeanDefinition的解析，这个类中包含了各种Spring Bean的定义规则的处理。如Bean元素的处理。如id,name,aliase等属性元素。将这些值读出来，设置到BeanDefitionHolder中。
+	- 对于其他元素配置的解析，由parseBeanDefinitionElement来完成。解析完成后放入BeanDefinitionHolder中。
