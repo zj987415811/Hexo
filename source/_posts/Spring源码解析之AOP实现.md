@@ -1,5 +1,5 @@
 ---
-title: SpringAOP实现
+title: Spring源码解析之SpringAOP实现
 date: 2018-08-08 14:50:15
 tags: SpringAOP
 ---
@@ -40,3 +40,5 @@ tags: SpringAOP
 	- getObject()方法首先会对通知器链进行初始化，通知器链封装一系列拦截器，所有拦截器都从配置中读取，为代理对象生成做准备。
 	- 生成代理对象时，需要对singleton和prototype进行区分。
 	- ProxyFactoryBean#initializeAdvisorChain(){第一次通过ProxyFactoryBean去获取对象的时候，完成初始化后，会读取配置中出现的所有通知器，将通知器的名字交给容器的getBean方法}->getSingletonInstance(){根据AOP框架来判断需要代理的接口}->getProxy()->createAopProxy(){返回AopProxy代理对象，分别为JdkDynamicProxy和Cglib2AopProxy}->isInterface(){jdk动态代理}->createCglibProxy(){非接口}。
+- JDK生成AopProxy代理对象
+	- 首先从Advised对象中取得代理对象的代理接口配置，然后调用Proxy的newInstance()生成Proxy代理对象。并指明三个参数，类装载器代理接口，Proxy回调方法所在的对象，这个对象需要实现InvocationHandler的invoker方法，提供代理对象回调的入口。
