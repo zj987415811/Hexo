@@ -73,7 +73,7 @@ scroll_to_more: true
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: jacman
+theme: hexo-theme-casual
 
 markdown:
   render:

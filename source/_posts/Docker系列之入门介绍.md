@@ -115,5 +115,80 @@ tags: Docker
 	6. entrypoint:
 4. 项目中的镜像分层
 ## 4. Docker仓库管理 ##
-1. 私有仓库
-	1. 
+## 5. Docker网络和存储管理 ##
+1. docker网络
+	1. 默认使用网桥+NAT的通信模型：当docker容器启动时，会创建一对veth虚拟网络设备附加到网桥docker0,另一个加入容器的网络命名空间，并改名eth0。这样就可以在容器与容器之间通过docker0通信了。
+	2. 容器与外部网络之间的通信
+		1. 容器访问外部网络：创建如下masquerade规则，所有从容器发出的，目的地为host外部网络的包的ip都修改成host的ip,并由host发出去。
+		2. 外部网络访容器：如果容器提供的服务需要暴露给外部网络，docker在启动容器时，就会创建SNAT规则。比如：
+			docker run -d -p 80:80 apache
+2. 网络配置
+	1. 网络配置参数
+		1. docker进程网络配置
+			1. -b:指定docker网桥设备，默认使用docker0;
+			2. -bip:指定网桥设备docker0的IP和掩码，使用标准的CIDR形式。
+			3. -dns:配置容器的DNS
+		2. 容器网络配置：docker run --net
+			1. bridge:默认方式；
+			2. none:容器没有网络栈，无法与外部通信；
+			3. container:<name|id>:使用其他容器的网络栈，
+			4. host:容器会使用Host的网络，没有独立的网络栈。
+		3. 配置DNS
+3. Docker数据管理
+	1. docker中容器一旦删除，容器本身对应的rootfs文件系统就会被删除，容器中的所有数据也将随之删除。但是日志或者其他需要持久化的数据不能随容器删除而删除。需要容器与host之前存在共享数据。---**数据卷，可以持久化数据和容器之间共享数据。**
+	2. 数据卷
+		1. 数据卷中参数：
+			1. -v [host-dir]:[container-dir]:[rw|ro] :通过该参数可以给容器创建数据卷，有三个变量：
+				1. host-dir:表示host的目录
+				2. container-dir:表示容器内部对应的目录
+				3. rw|ro:用于控制卷的读写权限
+			2. 创建数据卷,在容器内部创建一个数据卷：docker run -it --rm -v /volumel --name test1 ....
+			3. 挂载Host的目录作为数据卷
+				1. docker run -it --rm -v /data/volumel:/volumel nginx /bin/bash
+				2. 通过这种方式可以在Host和容器之间进行数据交换。
+				3. 默认情况具有读写权限，也可以挂载只读：-v /data/volumel:/volumel:ro
+			4. 挂载Host的文件作为数据卷
+				1. docker run --rm -it -v ~/.bash_history:/root/.bash_history 
+		2. 数据卷容器：--volumes-from
+			1. 创建和挂载数据卷容器
+				1. 将一些相关的容器部署在同一个Host上，并且希望这些容器间可以共享数据。此时可以创建一个命名的数据卷容器，然后供其他容器挂载。
+				2. docker run -d -v /dbdata --name dbdata traning/postgres echo Data-only container for postgres
+				3. docker run -d --volumes-from dbdata --name db1 training/postgres
+				4. docker run -d --volumes-from dbdata --name db2 training/postgres 
+			2. 数据卷容器的应用
+				1. 日志收集
+			3. 备份，恢复和迁移数据卷
+				1. 备份数据卷：--volumes-from
+					1. docker run --volumes-from dbdata -v ${pwd}:/backup nginx tar cvf /backup/backpu.tar /dbdata
+				2. 恢复数据卷
+					1. docker run -v /dbdata --name dbdata2 nginx /bin/bash
+					2. docker run --volumes-from dbdata2 -v ${pwd}:/backup busybox tar xvf /backup/back.tar
+		3. docker存储驱动(storage driver)
+			1. docker存储驱动历史：
+				1. graph driver--->AUFS--->没有进入内核主线
+				2. device-mapper
+				3. btrfs
+				4. overlayfs 
+			2. docker overlayfs driver
+				1. 使用overlayfs的lowerdir指向image layer，使用upperdir指向containerlayer,merged将lowerdir于upperdir整合起来提供统一视图给容器，作为根文件系统。
+4. docker项目日常维护
+	1. 宿主机管理
+		1. docker 安装启动：
+			1. 安装：yum install docker-in
+			2. 启动：service docker start 
+		2. 检查docker进程是否启动
+			1. ps aux | grep docker 
+		3. 转移数据
+			1. service docker stop 
+			2. mkdir /data/dockerData/
+			3. mv /var/lib/docker /data/dockerData/
+			4. ln -s /data/dockerData/docker/ /var/lib/docker
+			5. service docker start 
+		4. 升级到最新版本
+	2. 网桥模式：默认时NAT模式，如果配置网桥模式需要三步：
+		1. 宿主机配网桥：
+			1. 备份原来网卡配置：
+			2. 安装pipework脚本；
+			3. 更新iproute。
+	3. GitLab的日常维护
+## 6. Docker Swarm容器集群 ##
